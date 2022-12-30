@@ -12,14 +12,12 @@
         Once again, I hope you enjoy this interactive map which will allow us to look back
         on the memories we made in France and Belgium whenever we want. <span class="important">With love, Matthew</span>.</p>
 
-      <router-link to="/world">
-        <div class="trip-button">
-          <div class="button-icon">
-            <FeatherIcon icon="play" />
-          </div>
-
-          <p class="button-text">Enter</p>
+      <router-link to="/countries" class="trip-button">
+        <div class="button-icon">
+          <FeatherIcon icon="play" />
         </div>
+
+        <p class="button-text">Enter</p>
       </router-link>
     </div>
   </div>
@@ -27,7 +25,6 @@
 
 <script setup>
 import { onMounted, ref, onUnmounted } from "vue";
-
 import FeatherIcon from "../components/FeatherIcon.vue";
 
 const props = defineProps([ "map" ]);
@@ -43,13 +40,18 @@ const handleMoveEnd = (event) => {
 onMounted(() => {
   props.map.on("moveend", handleMoveEnd);
 
+  props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
+
   const location = {
     center: [ -40.852003, 38.710733 ],
-    zoom: 1.5,
-    speed: 0.25,
-    // To-do: Padding
+    zoom: 2,
+    duration: 2500,
+    pitch: 0,
     padding: {
-      left: window.innerWidth / 2
+      right: 0,
+      left: 448,
+      top: 0,
+      bottom: 0
     }
   };
 
@@ -62,10 +64,9 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-// To-do: Shadow, width
 .trip {
   height: 100vh;
-  width: 50vw;
+  width: 448px;
 
   left: 0;
   top: 0;
@@ -107,7 +108,6 @@ onUnmounted(() => {
 
       margin-bottom: 32px;
 
-      // To-do: Position
       .location {
         background-size: cover;
         -webkit-background-clip: text;

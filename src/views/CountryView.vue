@@ -1,185 +1,177 @@
 <template>
-  <div class="marker" v-show="active" ref="franceTemplate">
-    <div class="marker-icon marker-icon-france" />
-
-    <div class="marker-text">
-      <p class="marker-title">France</p>
-
-      <p class="marker-description">3 locations</p>
-    </div>
+  <div class="side-bar">
+    <CountryMenu :country="country" :active="true" />
   </div>
 
-  <div class="marker" v-show="active" ref="belgiumTemplate">
-    <div class="marker-icon marker-icon-belgium" />
+  <div 
+    v-show="active" 
+    class="marker" 
+    v-for="city in country.cities" 
+    ref="templates"
+    @click="handleClick(city.title)"
+    @mousedown="handleMouseDown"
+  >
+    <p class="marker-tooltip">{{ city.title }}</p>
 
-    <div class="marker-text">
-      <p class="marker-title">Belgium</p>
-
-      <p class="marker-description">1 location</p>
-    </div>
+    <div class="marker-icon" />
   </div>
 </template>
 
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRouter } from "vue-router";
+import CountryMenu from "@/components/CountryMenu.vue";
+import countries from "@/countries";
 import mapboxgl from "mapbox-gl";
 
-const props = defineProps([ "map" ]);
+const props = defineProps([ "country", "map" ]);
+const country = countries.find(country => country.title.toLowerCase() === props.country);
 
-const route = useRoute();
+const router = useRouter();
 
 const active = ref(false);
 
-const franceMarker = ref(null);
-const franceTemplate = ref(null);
+const templates = ref([]);
 
-const belgiumMarker = ref(null);
-const belgiumTemplate = ref(null);
-
-const DEFAULT_LAYER_OPTIONS = {
-  source: {
-    type: "vector",
-    url: "mapbox://mapbox.country-boundaries-v1",
-  },
-  "source-layer": "country_boundaries",
-  type: "fill"
-}
+const markers = [];
 
 const initialize = () => {
   active.value = true;
 
-  // France
-  const franceLayerOptions = {
-    id: "france-boundaries",
-    paint: {
-      "fill-color": "#059669",
-      "fill-opacity": 0.5
-    }
-  };
+  for (const cityIndex in country.cities) {
+    const { center } = country.cities[cityIndex];
 
-  props.map.addLayer({ ...DEFAULT_LAYER_OPTIONS, ...franceLayerOptions });
-  props.map.setFilter("france-boundaries", [ "in", "name_en", "France" ]);
+    const marker = new mapboxgl.Marker({ 
+      element: templates.value[cityIndex], 
+      // Disable panning
+      draggable: true,
+      anchor: "bottom",
+      offset: [ 0, 8 ]
+    })
+      .setLngLat(center)
+      .addTo(props.map);
 
-  franceMarker.value = new mapboxgl.Marker({
-    element: franceTemplate.value,
-    anchor: "center"
-  })
-    .setLngLat([ 2.574716, 47.007522 ])
-    .addTo(props.map);
-
-  // Belgium
-  const belgiumLayerOptions = {
-    id: "belgium-boundaries",
-    paint: {
-      "fill-color": "#dc2626",
-      "fill-opacity": 0.5
-    }
-  };
-
-  props.map.addLayer({ ...DEFAULT_LAYER_OPTIONS, ...belgiumLayerOptions });
-  props.map.setFilter("belgium-boundaries", [ "in", "name_en", "Belgium" ]);
-
-  belgiumMarker.value = new mapboxgl.Marker({
-    element: belgiumTemplate.value,
-    anchor: "center"
-  })
-    .setLngLat([ 4.779704, 50.648169 ])
-    .addTo(props.map);
+    markers.push(marker);
+  }
 };
 
 const handleMoveEnd = (event) => {
-  if (event.view !== "world") return;
+  // To-do: Force component to remount when country changes
+  if (event.view !== country.title) return;
 
   initialize();
 };
 
-onMounted(() => {  
+// Disable dragging 
+const handleMouseDown = (event) => {
+  event.stopPropagation();
+};
+
+const handleClick = (title) => {
+  const countryIdentifier = country.title.toLowerCase();
+  const cityIdentifier = title.toLowerCase();
+  router.push("/countries/" + countryIdentifier + "/" + cityIdentifier);
+};
+
+onMounted(() => {
   props.map.on("moveend", handleMoveEnd);
 
-  // To-do: Padding
-  const location = {
-    center: [ 2.574716, 47.007522 ],
-    zoom: 5,
-    speed: 0.5
+  props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
+
+  const options = {
+    duration: 2500,
+    maxZoom: 6,
+    pitch: 0,
+    padding: {
+      left: 128,
+      right: 128,
+      top: 0,
+      bottom: 0
+    }
   };
 
-  props.map.flyTo(location, { view: "world" });
+  /* 
+  // fitBounds seems to hang when the same LngLat
+  // was supplied twice
+  if (country.cities.length === 1) {
+    options.center = country.cities[0].center;
+
+    props.map.flyTo(options, { view: country.title });
+
+    return;
+  }*/
+  
+  let xMinimum, yMinimum, xMaximum, yMaximum;
+
+  for (const cityIndex in country.cities) {
+    const [ longitude, latitude ] = country.cities[cityIndex].center;
+
+    xMinimum = xMinimum < longitude ? xMinimum : longitude;
+    xMaximum = xMaximum > longitude ? xMaximum : longitude;
+    yMinimum = yMinimum < latitude ? yMinimum : latitude;
+    yMaximum = yMaximum > latitude ? yMaximum : latitude;
+  }
+
+  const bounds = [ 
+    [ xMinimum, yMinimum ], 
+    [ xMaximum, yMaximum ] 
+  ];
+
+  props.map.fitBounds(bounds, options, { view: country.title });
 });
 
 onUnmounted(() => {
   props.map.off("moveend", handleMoveEnd);
 
-  // The component can be unmounted mid-flight before 
-  // layers, sources, and markers have been added
-  if (!active.value) return;
-
-  props.map.removeLayer("belgium-boundaries");
-  props.map.removeLayer("france-boundaries");
-
-  // Adding a layer also adds a source for country boundaries
-  props.map.removeSource("belgium-boundaries");
-  props.map.removeSource("france-boundaries");
-
-  franceMarker.value.remove();
-  belgiumMarker.value.remove();
+  for (const marker of markers) marker.remove();
 });
 </script>
 
-<style lang="scss">
-.mapboxgl-popup .mapboxgl-popup-content {
-  padding: 0;
+<style lang="scss" scoped>
+.side-bar {
+  position: absolute;
 
-  background: transparent;
-}
+  right: 16px;
+  top: 16px;
 
-.mapboxgl-popup .mapboxgl-popup-tip {
-  display: none;
+  width: 384px;
 }
 
 .marker {
-  background-color: #262626;
-
-  font-family: "Inter", sans-serif;
-
-  padding: 8px 16px;
-
-  border-radius: 4px;
-
   display: flex;
+  flex-direction: column;
+  align-items: center;
 
-  .marker-text {
+  cursor: pointer;
+
+  .marker-tooltip {
+    background-color: #262626;
+
+    font-family: "Inter", sans-serif;
+
+    padding: 8px 16px;
+
+    border-radius: 4px;
+
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
     line-height: 1;  
-
-    p.marker-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: white;
-
-      margin-bottom: 4px;
-    }
-
-    p.marker-description {
-      font-size: 12px;
-      color: rgba(white, 0.5);
-    }
   }
 
   .marker-icon {
-    height: 32px;
-    width: 32px;
+    height: 16px;
+    width: 16px;
 
-    margin-right: 16px;
+    margin-top: 16px;
 
-    border-radius: 16px;
+    cursor: pointer;
 
-    &.marker-icon-france {
-      background: linear-gradient(to right, blue 33%, white 33% 67%, red 67%);
-    }
+    border-radius: 8px;
 
-    &.marker-icon-belgium {
-      background: linear-gradient(to right, black 33%, yellow 33% 67%, red 67%);
-    }
+    background-color: #2563eb;
+
+    box-shadow: 0 0 0 8px rgba(#2563eb, 0.25);
   }
 }
 </style>
