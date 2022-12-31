@@ -1,13 +1,3 @@
-function range(start, stop) {
-  const result = [ start ];
-
-  for (const i = start + 1; i < stop; i++) {
-    result.push(i);
-  }
-
-  return result;
-};
-
 const countries = [
   {
     title: "France",
