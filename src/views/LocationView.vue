@@ -1,4 +1,6 @@
 <template>
+  <div class="overlay" />
+
   <div class="side-bar">
     <CountryMenu :country="country" />
 
@@ -102,6 +104,18 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+.overlay {
+  position: absolute;
+
+  top: 0;
+  right: 0;
+
+  width: 768px;
+  height: 100%;
+
+  background: linear-gradient(to left, #E5E3CD 384px, transparent);
+}
+
 .side-bar {
   position: absolute;
 
