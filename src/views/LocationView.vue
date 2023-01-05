@@ -151,12 +151,22 @@ onUnmounted(() => {
   }
 
   .side-bar-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
 
     .container-picture {
       aspect-ratio: 9 / 16;
+
+      width: calc(50% - 4px);
+
+      &:not(:last-child):nth-child(odd) {
+        margin-right: 8px;
+      }
+
+      &:nth-child(n + 3) {
+        margin-top: 8px;
+      }
 
       img {
         object-fit: cover;

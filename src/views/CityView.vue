@@ -47,6 +47,7 @@ const initialize = () => {
     offset: [ 0, 10 ],
     animation: "fade",
     duration: 150,
+    maxWidth: 512,
     content: (reference) => reference.getAttribute("data-tooltip")
   });
 
