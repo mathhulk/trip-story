@@ -1,20 +1,19 @@
 <template>
-  <template v-if="active">
-    <div class="side-bar">
-      <CountryMenu :country="country" />
+  <div class="side-bar">
+    <CountryMenu :country="country" />
 
-      <CityMenu :country="country" :city="city" :active="true" />
-    </div>
+    <CityMenu :country="country" :city="city" :active="true" />
+  </div>
 
-    <div 
-      class="location-marker" 
-      v-for="location in city.locations" 
-      ref="templates"
-      @click="handleClick(location.title)"
-      @mousedown="handleMouseDown"
-      :data-tooltip="location.title"
-    />
-  </template>
+  <div 
+    class="location-marker" 
+    v-show="active"
+    v-for="location in city.locations" 
+    ref="templates"
+    @click="handleClick(location.title)"
+    @mousedown="handleMouseDown"
+    :data-tooltip="location.title"
+  />
 </template>
 
 <script setup>
@@ -30,16 +29,25 @@ const props = defineProps([ "country", "city", "map" ]);
 
 const router = useRouter();
 
+// To-do: Is there a better way to organize this component..?
 const active = ref(false);
 const templates = ref([]);
-
 const markers = [];
 let tooltips;
 
 let country;
 let city;
 
-const initialize = () => {
+const updateCity = () => {
+  if (country?.title.toLowerCase() !== props.country) country = countries.find(country => country.title.toLowerCase() === props.country);
+  city = country.cities.find(city => city.title.toLowerCase() === props.city);
+};
+
+const handleMoveEnd = (event) => {
+  if (event.view !== city.title) return;
+
+  active.value = true;
+
   tooltips = tippy("[data-tooltip]", {
     arrow: false, 
     offset: [ 0, 10 ],
@@ -65,16 +73,6 @@ const initialize = () => {
   }
 };
 
-const handleMoveEnd = (event) => {
-  if (event.view !== city.title) return;
-  
-  active.value = true;
-
-  // Wait for elements to mount before rendering
-  // markers and tooltips
-  nextTick(initialize);
-};
-
 // Disable dragging 
 const handleMouseDown = (event) => {
   event.stopPropagation();
@@ -89,30 +87,23 @@ const handleClick = (title) => {
 };
 
 const enter = () => {
-  country = countries.find(country => country.title.toLowerCase() === props.country);
-  city = country.cities.find(city => city.title.toLowerCase() === props.city);
-
   props.map.on("moveend", handleMoveEnd);
   props.map.setStyle("mapbox://styles/mathhulk/cl0ovzd7j000u14mlcv35f827");
 
   const options = {
     duration: 2500,
-    maxZoom: 15,
     pitch: 0,
-    padding: {
-      left: 128,
-      right: 128,
-      top: 128,
-      bottom: 128
-    }
+    // To-do: Fix additive padding bug in Mapbox GL JS
+    padding: { left: 128, right: 128, top: 128, bottom: 128 }
   };
 
   // fitBounds seems to hang when a single point was supplied or
   // the LngLat includes too many numbers after the decimal..?
   if (city.locations.length === 1) {
     options.center = city.locations[0].center;
+    options.zoom = 15;
 
-    props.map.flyTo(options, { view: country.title });
+    props.map.flyTo(options, { view: city.title });
 
     return;
   };
@@ -133,6 +124,8 @@ const enter = () => {
     [ xMaximum, yMaximum ] 
   ];
 
+  options.maxZoom = 15;
+
   props.map.fitBounds(bounds, options, { view: city.title });
 };
 
@@ -151,9 +144,12 @@ onMounted(enter);
 onUnmounted(exit);
 
 watch(() => props.city, () => {
+  updateCity();
   exit();
-  enter();
+  nextTick(enter);
 });
+
+updateCity();
 </script>
 
 <style lang="scss">

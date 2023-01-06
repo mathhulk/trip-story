@@ -1,34 +1,32 @@
 <template>
-  <template v-if="active">
-    <div class="overlay" />
+  <div class="overlay" />
 
-    <div class="side-bar">
-      <CountryMenu :country="country" />
+  <div class="side-bar">
+    <CountryMenu :country="country" />
 
-      <CityMenu :country="country" :city="city" />
+    <CityMenu :country="country" :city="city" />
 
-      <div class="side-bar-menu">
-        <div class="menu-text">
-          <p class="menu-title">{{ location.title }}</p>
-          <p class="menu-description">{{ location.description || "Location" }}</p>
-        </div>
-
-        <div class="menu-button" @click="copy">
-          <FeatherIcon icon="link" />
-        </div>
+    <div class="side-bar-menu">
+      <div class="menu-text">
+        <p class="menu-title">{{ location.title }}</p>
+        <p class="menu-description">{{ location.description || "Location" }}</p>
       </div>
 
-      <div v-if="location.cover" class="side-bar-cover">
-        <img :src="getImage(location.cover)">
-      </div>
-
-      <div class="side-bar-container">
-        <div v-for="image in location.images" class="container-picture">
-          <img :src="getImage(image)">
-        </div>
+      <div class="menu-button" @click="copy">
+        <FeatherIcon icon="link" />
       </div>
     </div>
-  </template>
+
+    <div v-if="location.cover" class="side-bar-cover">
+      <img :src="getImage(location.cover)">
+    </div>
+
+    <div class="side-bar-container">
+      <div v-for="image in location.images" class="container-picture">
+        <img :src="getImage(image)">
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -41,13 +39,17 @@ import mapboxgl from "mapbox-gl";
 
 const props = defineProps([ "country", "city", "location", "map" ]);
 
-const active = ref(false);
+let marker;
 
 let country;
 let city;
 let location;
 
-let marker;
+const updateLocation = () => {
+  if (country?.title.toLowerCase() !== props.country) country = countries.find(country => country.title.toLowerCase() === props.country);
+  if (city?.title.toLowerCase() !== props.city) city = country.cities.find(city => city.title.toLowerCase() === props.city);
+  location = city.locations.find(location => location.title.toLowerCase() === props.location);
+};
 
 const getImage = (image) => {
   return new URL(`../assets/images/locations/${image}.jpg`, import.meta.url).href;
@@ -57,22 +59,17 @@ const copy = () => navigator.clipboard.writeText(window.location.href);
 
 const handleMoveEnd = (event) => {
   if (event.view !== location.title) return;
-
-  active.value = true;
   
   marker = new mapboxgl.Marker({ 
     color: "#2d2d2d",
-    anchor: "center"
+    anchor: "center",
+    offset: [ 0, 0 ]
   })
     .setLngLat(location.center)
     .addTo(props.map);
 };
 
 const enter = () => {
-  country = countries.find(country => country.title.toLowerCase() === props.country);
-  city = country.cities.find(city => city.title.toLowerCase() === props.city);
-  location = city.locations.find(location => location.title.toLowerCase() === props.location);
-
   props.map.on("moveend", handleMoveEnd);
   props.map.setStyle("mapbox://styles/mathhulk/clcb14wmh00ac14s84f2zg7fn");
 
@@ -81,12 +78,8 @@ const enter = () => {
     zoom: 18,
     pitch: 50,
     center: location.center,
-    padding: {
-      left: 0,
-      right: 400,
-      top: 0,
-      bottom: 0
-    }
+    // To-do: Fix additive padding bug in Mapbox GL JS
+    padding: { left: 0, right: 400, top: 0, bottom: 0 }
   };
 
   props.map.flyTo(options, { view: location.title });
@@ -102,9 +95,12 @@ onMounted(enter);
 onUnmounted(exit);
 
 watch(() => props.location, () => {
+  updateLocation();
   exit();
   enter();
 });
+
+updateLocation();
 </script>
 
 <style lang="scss" scoped>

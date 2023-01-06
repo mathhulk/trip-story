@@ -28,10 +28,9 @@ const props = defineProps([ "map" ]);
 
 const router = useRouter();
 
+// To-do: Is there a better way to organize this component..?
 const active = ref(false);
-
 const templates = ref([]);
-
 const markers = [];
 
 // Disable dragging 
@@ -44,7 +43,9 @@ const handleClick = (title) => {
   router.push("/countries/" + countryIdentifier);
 };
 
-const initialize = () => {
+const handleMoveEnd = (event) => {
+  if (event.view !== "countries") return;
+  
   active.value = true;
 
   for (const countryIndex in countries) {
@@ -61,12 +62,6 @@ const initialize = () => {
 
     markers.push(marker);
   }
-};
-
-const handleMoveEnd = (event) => {
-  if (event.view !== "countries") return;
-
-  initialize();
 };
 
 onMounted(() => {  
@@ -88,12 +83,8 @@ onMounted(() => {
     duration: 2500,
     maxZoom: 5,
     pitch: 0,
-    padding: {
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0
-    }
+    // To-do: Fix additive padding bug in Mapbox GL JS
+    padding: { top: 0, left: 0, right: 0, bottom: 0 }
   };
 
   const bounds = [

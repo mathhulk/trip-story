@@ -2,6 +2,8 @@
   <div class="tour-bar">
     <div v-show="tour" class="tour-bar-indicator" ref="indicator" @animationend="skipNext" />
 
+    <img v-if="!tour" class="tour-bar-drawing" src="../assets/images/drawing.png">
+
     <div v-if="tour" class="tour-bar-button" @click="end(true)">
       <FeatherIcon icon="x" />
     </div>
@@ -25,12 +27,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import FeatherIcon from "@/components/FeatherIcon.vue";
 import countries from "@/countries.js";
 
 const router = useRouter();
+const route = useRoute();
 
 const tour = ref(false);
 const paused = ref(false);
@@ -112,11 +115,16 @@ const skipPrevious = () => {
   updateRoute();
 };
 
-const updateRoute = () => {
+const getIdentifiers = () => {
   const countryIdentifier = countries[countryIndex.value].title.toLowerCase();
   const cityIdentifier = cities.value[cityIndex.value].title.toLowerCase();
   const locationIdentifier = locations.value[locationIndex.value].title.toLowerCase();
 
+  return { countryIdentifier, cityIdentifier, locationIdentifier };
+};
+
+const updateRoute = () => {
+  const { countryIdentifier, cityIdentifier, locationIdentifier } = getIdentifiers();
   router.push("/countries/" + countryIdentifier + "/" + cityIdentifier + "/" + locationIdentifier);
 
   // Required for replaying an animation
@@ -148,6 +156,17 @@ const end = (user) => {
 
   router.push("/countries");
 };
+
+watch(() => route.params, () => {
+  if (!tour.value) return;
+
+  const { country, city, location } = route.params;
+  const { countryIdentifier, cityIdentifier, locationIdentifier } = getIdentifiers();
+
+  if (countryIdentifier === country && cityIdentifier === city && locationIdentifier === location) return;
+
+  end(true);
+});
 </script>
 
 <style lang="scss" scoped>
@@ -160,12 +179,20 @@ const end = (user) => {
 
   position: absolute;
 
-  overflow: hidden;
-
   top: 16px;
   left: 120px;
 
   padding: 8px;
+
+  .tour-bar-drawing {
+    position: absolute;
+
+    height: 32px;
+    width: 128px;
+
+    bottom: -40px;
+    left: 24px;
+  }
 
   @keyframes time {
     0% {

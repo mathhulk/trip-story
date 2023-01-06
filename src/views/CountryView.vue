@@ -19,24 +19,30 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import CountryMenu from "@/components/CountryMenu.vue";
 import countries from "@/countries";
 import mapboxgl from "mapbox-gl";
 
 const props = defineProps([ "country", "map" ]);
-const country = countries.find(country => country.title.toLowerCase() === props.country);
 
 const router = useRouter();
 
+// To-do: Is there a better way to organize this component..?
 const active = ref(false);
-
 const templates = ref([]);
-
 const markers = [];
 
-const initialize = () => {
+let country;
+
+const updateCountry = () => {
+  country = countries.find(country => country.title.toLowerCase() === props.country);
+};
+
+const handleMoveEnd = (event) => {
+  if (event.view !== country.title) return;
+
   active.value = true;
 
   for (const cityIndex in country.cities) {
@@ -47,20 +53,13 @@ const initialize = () => {
       // Disable panning
       draggable: true,
       anchor: reverse ? "top" : "bottom",
-      offset: [ 0, reverse ? -16 : 16 ]
+      offset: [ 16, reverse ? 8 : 24 ]
     })
       .setLngLat(center)
       .addTo(props.map);
 
     markers.push(marker);
   }
-};
-
-const handleMoveEnd = (event) => {
-  // To-do: Force component to remount when country changes
-  if (event.view !== country.title) return;
-
-  initialize();
 };
 
 // Disable dragging 
@@ -78,19 +77,15 @@ const getMarkerClass = (reverse) => {
   return { "marker-reverse": reverse };
 };
 
-onMounted(() => {
+const enter = () => {
   props.map.on("moveend", handleMoveEnd);
   props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
 
   const options = {
     duration: 2500,
     pitch: 0,
-    padding: {
-      left: 128,
-      right: 128,
-      top: 0,
-      bottom: 0
-    }
+    // To-do: Fix additive padding bug in Mapbox GL JS
+    padding: { left: 128, right: 128, top: 0, bottom: 0 }
   };
 
   // fitBounds seems to hang when a single point was supplied or
@@ -98,6 +93,7 @@ onMounted(() => {
   if (country.cities.length === 1) {
     options.center = country.cities[0].center;
     options.zoom = 7;
+
     props.map.flyTo(options, { view: country.title });
 
     return;
@@ -120,14 +116,26 @@ onMounted(() => {
   ];
 
   options.maxZoom = 7;
-  props.map.fitBounds(bounds, options, { view: country.title });
-});
 
-onUnmounted(() => {
+  props.map.fitBounds(bounds, options, { view: country.title });
+};
+
+const exit = () => {
   props.map.off("moveend", handleMoveEnd);
 
   for (const marker of markers) marker.remove();
+};
+
+onMounted(enter);
+onUnmounted(exit);
+
+watch(() => props.country, () => {
+  updateCountry();
+  exit();
+  nextTick(enter);
 });
+
+updateCountry();
 </script>
 
 <style lang="scss" scoped>

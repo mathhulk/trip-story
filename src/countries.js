@@ -7,7 +7,7 @@ const countries = [
       background: "linear-gradient(to right, blue 33%, white 33% 67%, red 67%)"
     },
     cities: [
-      /*{
+      {
         title: "Versailles",
         center: [ 2.1204217755070, 48.80493919355 ],
         reverse: true,
@@ -18,7 +18,7 @@ const countries = [
             center: [ 2.1204217755070, 48.80493919355 ]
           }
         ]
-      },*/
+      },
       {
         title: "Paris",
         center: [ 2.343226492292, 48.8631972414 ],
