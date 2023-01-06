@@ -1,36 +1,38 @@
 <template>
-  <div class="overlay" />
+  <template v-if="active">
+    <div class="overlay" />
 
-  <div class="side-bar">
-    <CountryMenu :country="country" />
+    <div class="side-bar">
+      <CountryMenu :country="country" />
 
-    <CityMenu :country="country" :city="city" />
+      <CityMenu :country="country" :city="city" />
 
-    <div class="side-bar-menu">
-      <div class="menu-text">
-        <p class="menu-title">{{ location.title }}</p>
-        <p class="menu-description">{{ location.description || "Location" }}</p>
+      <div class="side-bar-menu">
+        <div class="menu-text">
+          <p class="menu-title">{{ location.title }}</p>
+          <p class="menu-description">{{ location.description || "Location" }}</p>
+        </div>
+
+        <div class="menu-button" @click="copy">
+          <FeatherIcon icon="link" />
+        </div>
       </div>
 
-      <div class="menu-button" @click="copy">
-        <FeatherIcon icon="link" />
+      <div v-if="location.cover" class="side-bar-cover">
+        <img :src="getImage(location.cover)">
+      </div>
+
+      <div class="side-bar-container">
+        <div v-for="image in location.images" class="container-picture">
+          <img :src="getImage(image)">
+        </div>
       </div>
     </div>
-
-    <div v-if="location.cover" class="side-bar-cover">
-      <img :src="getImage(location.cover)">
-    </div>
-
-    <div class="side-bar-container">
-      <div v-for="image in location.images" class="container-picture">
-        <img :src="getImage(image)">
-      </div>
-    </div>
-  </div>
+  </template>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import FeatherIcon from "@/components/FeatherIcon.vue";
 import CountryMenu from "@/components/CountryMenu.vue";
 import CityMenu from "@/components/CityMenu.vue";
@@ -38,11 +40,12 @@ import countries from "@/countries";
 import mapboxgl from "mapbox-gl";
 
 const props = defineProps([ "country", "city", "location", "map" ]);
-const country = countries.find(country => country.title.toLowerCase() === props.country);
-const city = country.cities.find(city => city.title.toLowerCase() === props.city);
-const location = city.locations.find(location => location.title.toLowerCase() === props.location);
 
 const active = ref(false);
+
+let country;
+let city;
+let location;
 
 let marker;
 
@@ -52,9 +55,11 @@ const getImage = (image) => {
 
 const copy = () => navigator.clipboard.writeText(window.location.href);
 
-const initialize = () => {
-  active.value = true;
+const handleMoveEnd = (event) => {
+  if (event.view !== location.title) return;
 
+  active.value = true;
+  
   marker = new mapboxgl.Marker({ 
     color: "#2d2d2d",
     anchor: "center"
@@ -63,19 +68,14 @@ const initialize = () => {
     .addTo(props.map);
 };
 
-const handleMoveEnd = (event) => {
-  // To-do: Force component to remount when country changes
-  if (event.view !== location.title) return;
+const enter = () => {
+  country = countries.find(country => country.title.toLowerCase() === props.country);
+  city = country.cities.find(city => city.title.toLowerCase() === props.city);
+  location = city.locations.find(location => location.title.toLowerCase() === props.location);
 
-  initialize();
-};
-
-onMounted(() => {
   props.map.on("moveend", handleMoveEnd);
-
   props.map.setStyle("mapbox://styles/mathhulk/clcb14wmh00ac14s84f2zg7fn");
 
-  // To-do: Pitch
   const options = {
     duration: 2500,
     zoom: 18,
@@ -90,16 +90,20 @@ onMounted(() => {
   };
 
   props.map.flyTo(options, { view: location.title });
-});
+};
 
-onUnmounted(() => {
+const exit = () => {
   props.map.off("moveend", handleMoveEnd);
 
-  // The component can be unmounted mid-flight 
-  // before tooltips have been created
-  if (!active.value) return;
+  if (marker) marker.remove();
+};
 
-  marker.remove();
+onMounted(enter);
+onUnmounted(exit);
+
+watch(() => props.location, () => {
+  exit();
+  enter();
 });
 </script>
 
@@ -172,7 +176,6 @@ onUnmounted(() => {
         object-fit: cover;
 
         height: 100%;
-        width: 100%;
 
         border-radius: 4px;
       }

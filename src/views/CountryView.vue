@@ -7,6 +7,7 @@
     v-show="active" 
     class="marker" 
     v-for="city in country.cities" 
+    :class="getMarkerClass(city.reverse)"
     ref="templates"
     @click="handleClick(city.title)"
     @mousedown="handleMouseDown"
@@ -39,14 +40,14 @@ const initialize = () => {
   active.value = true;
 
   for (const cityIndex in country.cities) {
-    const { center } = country.cities[cityIndex];
+    const { center, reverse } = country.cities[cityIndex];
 
     const marker = new mapboxgl.Marker({ 
       element: templates.value[cityIndex], 
       // Disable panning
       draggable: true,
-      anchor: "bottom",
-      offset: [ 0, 8 ]
+      anchor: reverse ? "top" : "bottom",
+      offset: [ 0, reverse ? -16 : 16 ]
     })
       .setLngLat(center)
       .addTo(props.map);
@@ -73,14 +74,16 @@ const handleClick = (title) => {
   router.push("/countries/" + countryIdentifier + "/" + cityIdentifier);
 };
 
+const getMarkerClass = (reverse) => {
+  return { "marker-reverse": reverse };
+};
+
 onMounted(() => {
   props.map.on("moveend", handleMoveEnd);
-
   props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
 
   const options = {
     duration: 2500,
-    maxZoom: 6,
     pitch: 0,
     padding: {
       left: 128,
@@ -90,16 +93,15 @@ onMounted(() => {
     }
   };
 
-  /* 
-  // fitBounds seems to hang when the same LngLat
-  // was supplied twice
+  // fitBounds seems to hang when a single point was supplied or
+  // the LngLat includes too many numbers after the decimal..?
   if (country.cities.length === 1) {
     options.center = country.cities[0].center;
-
+    options.zoom = 7;
     props.map.flyTo(options, { view: country.title });
 
     return;
-  }*/
+  }
   
   let xMinimum, yMinimum, xMaximum, yMaximum;
 
@@ -117,6 +119,7 @@ onMounted(() => {
     [ xMaximum, yMaximum ] 
   ];
 
+  options.maxZoom = 7;
   props.map.fitBounds(bounds, options, { view: country.title });
 });
 
@@ -142,7 +145,21 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
 
+  margin: -16px;
+
   cursor: pointer;
+
+  &.marker-reverse {
+    flex-direction: column-reverse;
+
+    .marker-icon {
+      margin-bottom: 16px;
+    }
+  }
+
+  &:not(.marker-reverse) .marker-icon {
+    margin-top: 16px;
+  }
 
   .marker-tooltip {
     background-color: #262626;
@@ -162,8 +179,6 @@ onUnmounted(() => {
   .marker-icon {
     height: 16px;
     width: 16px;
-
-    margin-top: 16px;
 
     cursor: pointer;
 

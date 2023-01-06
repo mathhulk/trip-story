@@ -53,7 +53,6 @@ const initialize = () => {
     const marker = new mapboxgl.Marker({
       element: templates.value[countryIndex],
       anchor: "bottom",
-      offset: [ 0, 8 ],
       // Disable panning
       draggable: true
     })
@@ -72,6 +71,7 @@ const handleMoveEnd = (event) => {
 
 onMounted(() => {  
   props.map.on("moveend", handleMoveEnd);
+  props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
 
   let xMinimum, yMinimum, xMaximum, yMaximum;
 
@@ -87,6 +87,7 @@ onMounted(() => {
   const options = {
     duration: 2500,
     maxZoom: 5,
+    pitch: 0,
     padding: {
       top: 0,
       left: 0,

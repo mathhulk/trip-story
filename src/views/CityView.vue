@@ -1,23 +1,24 @@
 <template>
-  <div class="side-bar">
-    <CountryMenu :country="country" />
+  <template v-if="active">
+    <div class="side-bar">
+      <CountryMenu :country="country" />
 
-    <CityMenu :country="country" :city="city" :active="true" />
-  </div>
+      <CityMenu :country="country" :city="city" :active="true" />
+    </div>
 
-  <div 
-    v-show="active" 
-    class="location-marker" 
-    v-for="location in city.locations" 
-    ref="templates"
-    @click="handleClick(location.title)"
-    @mousedown="handleMouseDown"
-    :data-tooltip="location.title"
-  />
+    <div 
+      class="location-marker" 
+      v-for="location in city.locations" 
+      ref="templates"
+      @click="handleClick(location.title)"
+      @mousedown="handleMouseDown"
+      :data-tooltip="location.title"
+    />
+  </template>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import CountryMenu from "@/components/CountryMenu.vue";
 import CityMenu from "@/components/CityMenu.vue";
@@ -26,22 +27,19 @@ import mapboxgl from "mapbox-gl";
 import tippy from "tippy.js";
 
 const props = defineProps([ "country", "city", "map" ]);
-const country = countries.find(country => country.title.toLowerCase() === props.country);
-const city = country.cities.find(city => city.title.toLowerCase() === props.city);
 
 const router = useRouter();
 
 const active = ref(false);
-
 const templates = ref([]);
 
 const markers = [];
-
 let tooltips;
 
-const initialize = () => {
-  active.value = true;
+let country;
+let city;
 
+const initialize = () => {
   tooltips = tippy("[data-tooltip]", {
     arrow: false, 
     offset: [ 0, 10 ],
@@ -68,10 +66,13 @@ const initialize = () => {
 };
 
 const handleMoveEnd = (event) => {
-  // To-do: Force component to remount when country changes
   if (event.view !== city.title) return;
+  
+  active.value = true;
 
-  initialize();
+  // Wait for elements to mount before rendering
+  // markers and tooltips
+  nextTick(initialize);
 };
 
 // Disable dragging 
@@ -87,21 +88,12 @@ const handleClick = (title) => {
   router.push("/countries/" + countryIdentifier + "/" + cityIdentifier + "/" + locationIdentifier);
 };
 
-onMounted(() => {
+const enter = () => {
+  country = countries.find(country => country.title.toLowerCase() === props.country);
+  city = country.cities.find(city => city.title.toLowerCase() === props.city);
+
   props.map.on("moveend", handleMoveEnd);
-
   props.map.setStyle("mapbox://styles/mathhulk/cl0ovzd7j000u14mlcv35f827");
-  
-  let xMinimum, yMinimum, xMaximum, yMaximum;
-
-  for (const locationIndex in city.locations) {
-    const [ longitude, latitude ] = city.locations[locationIndex].center;
-
-    xMinimum = xMinimum < longitude ? xMinimum : longitude;
-    xMaximum = xMaximum > longitude ? xMaximum : longitude;
-    yMinimum = yMinimum < latitude ? yMinimum : latitude;
-    yMaximum = yMaximum > latitude ? yMaximum : latitude;
-  }
 
   const options = {
     duration: 2500,
@@ -115,24 +107,52 @@ onMounted(() => {
     }
   };
 
+  // fitBounds seems to hang when a single point was supplied or
+  // the LngLat includes too many numbers after the decimal..?
+  if (city.locations.length === 1) {
+    options.center = city.locations[0].center;
+
+    props.map.flyTo(options, { view: country.title });
+
+    return;
+  };
+  
+  let xMinimum, yMinimum, xMaximum, yMaximum;
+
+  for (const locationIndex in city.locations) {
+    const [ longitude, latitude ] = city.locations[locationIndex].center;
+
+    xMinimum = xMinimum < longitude ? xMinimum : longitude;
+    xMaximum = xMaximum > longitude ? xMaximum : longitude;
+    yMinimum = yMinimum < latitude ? yMinimum : latitude;
+    yMaximum = yMaximum > latitude ? yMaximum : latitude;
+  }
+
   const bounds = [ 
     [ xMinimum, yMinimum ], 
     [ xMaximum, yMaximum ] 
   ];
 
   props.map.fitBounds(bounds, options, { view: city.title });
-});
+};
 
-onUnmounted(() => {
+const exit = () => {
   props.map.off("moveend", handleMoveEnd);
 
   for (const marker of markers) marker.remove();
+  if (tooltips) for (const tooltip of tooltips) tooltip.destroy();
 
-  // The component can be unmounted mid-flight 
-  // before tooltips have been created
-  if (!active.value) return;
+  markers.value = [];
 
-  for (const tooltip of tooltips) tooltip.destroy();
+  active.value = false;
+};
+
+onMounted(enter);
+onUnmounted(exit);
+
+watch(() => props.city, () => {
+  exit();
+  enter();
 });
 </script>
 

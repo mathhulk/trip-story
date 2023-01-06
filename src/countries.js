@@ -7,9 +7,21 @@ const countries = [
       background: "linear-gradient(to right, blue 33%, white 33% 67%, red 67%)"
     },
     cities: [
+      /*{
+        title: "Versailles",
+        center: [ 2.1204217755070, 48.80493919355 ],
+        reverse: true,
+        locations: [
+          {
+            title: "Palace of Versailles",
+            description: "Château de Versailles",
+            center: [ 2.1204217755070, 48.80493919355 ]
+          }
+        ]
+      },*/
       {
         title: "Paris",
-        center: [ 2.260645763831, 48.92403041017 ],
+        center: [ 2.343226492292, 48.8631972414 ],
         locations: [
           {
             title: "Eiffel Tower",
@@ -30,12 +42,125 @@ const countries = [
             center: [ 2.2874846155178, 48.85583067105 ],
             cover: 89,
             images: [ 90, 91 ]
+          },
+          {
+            title: "Iolanda",
+            description: "Restaurant",
+            center: [ 2.2892262423352, 48.85466313164 ],
+            images: [ 92, 93, 94, 95 ]
+          },
+          {
+            title: "Fontaine Saint-Michel",
+            description: "Fountain",
+            center: [ 2.343822680425, 48.853351985504 ],
+            images: [ 96, 97 ]
+          },
+          {
+            title: "Latin Quarter",
+            description: "Quartier latin",
+            center: [ 2.3452599530620, 48.850942440931 ],
+            cover: 98,
+            images: [ 99, 100, 101, 102, 103, 104 ]
+          },
+          {
+            title: "Pont Saint-Michel",
+            description: "Bridge",
+            center: [ 2.344977817005, 48.85445032813 ],
+            cover: 105,
+            images: [ 106, 107, 166, 167, 168 ]
+          },
+          {
+            title: "Notre-Dame",
+            description: "Cathédrale Notre-Dame de Paris",
+            center: [ 2.3499163680669, 48.853080209363 ],
+            cover: 108,
+            images: [ 109, 110, 111 ]
+          },
+          {
+            title: "Saint-Jacques Tower",
+            description: "Tour Saint-Jacques",
+            center: [ 2.3489163295961, 48.85800713760 ],
+            images: [ 112, 113 ]
+          },
+          {
+            center: [ 2.3376097165464, 48.860606437639 ],
+            title: "Louvre Museum",
+            description: "Musée du Louvre",
+            cover: 114,
+            images: [ 115, 116, 117, 118, 119, 120, 121, 122, 123, 124 ]
+          },
+          {
+            center: [ 2.2950540981710, 48.8738885537 ],
+            title: "Arc de Triomphe",
+            description: "Monument",
+            cover: 126,
+            images: [ 125, 127, 128 ]
+          },
+          {
+            center: [ 2.347157266773, 48.85258479342 ],
+            title: "Shakespeare and Company",
+            description: "Book store",
+            images: [ 129, 130, 131, 132 ]
+          },
+          {
+            center: [ 2.3078169345505, 48.86362632245 ],
+            title: "Seine",
+            description: "River",
+            cover: 133,
+            images: [ 134, 135, 136 ]
+          },
+          {
+            center: [ 2.3333418124805, 48.853859148776 ],
+            title: "Saint-Germain-des-Prés",
+            description: "Quartier Saint-Germain-des-Prés",
+            cover: 137,
+            images: [ 138, 139, 140, 141 ]
+          },
+          {
+            center: [ 2.3404347331234, 48.88492023070 ],
+            title: "Maison Milie",
+            description: "Cafe",
+            images: [ 142, 143, 144, 145 ]
+          },
+          {
+            center: [ 2.343107924688, 48.886758854028 ],
+            title: "Sacré-Cœur",
+            description: "Basilica",
+            cover: 146,
+            images: [ 147, 148, 149, 150, 151, 152 ]
+          },
+          {
+            title: "Place du Tertre",
+            description: "Plaza",
+            center: [ 2.340803905388, 48.88649760759 ],
+            cover: 153,
+            images: [ 154, 155, 156, 157, 158 ]
+          },
+          {
+            title: "Musée de l'Orangerie",
+            description: "Art museum",
+            center: [ 2.3226651145235, 48.863793820441 ],
+            cover: 159,
+            images: [ 160, 161, 162, 163, 164, 165 ]
+          },
+          {
+            center: [ 2.3449930308639, 48.855474231217 ],
+            title: "Sainte-Chapelle",
+            description: "Chapel",
+            cover: 169,
+            images: [ 170, 171, 172, 173, 174, 175 ]
+          },
+          {
+            title: "Musée d'Orsay",
+            description: "Art museum",
+            center: [ 2.326584700500, 48.859965972493 ],
+            images: [ 176, 177, 178, 179, 180, 181, 182, 183 ]
           }
         ]
       },
       {
         title: "Strasbourg",
-        center: [ 7.5449900672441, 48.59516595010 ],
+        center: [ 7.747294634864, 48.58300951615 ],
         locations: [
           {
             title: "Pont Kuss",
@@ -115,7 +240,7 @@ const countries = [
       {
         title: "Bruges",
         description: "Brugges",
-        center: [ 3.258389006055, 51.26443229740 ],
+        center: [ 3.22431653797, 51.20893967177 ],
         locations: [
           {
             title: "Basilica of the Holy Blood",
