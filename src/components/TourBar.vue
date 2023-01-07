@@ -213,6 +213,8 @@ watch(() => route.params, () => {
 
     position: absolute;
 
+    border-radius: 4px;
+
     top: 0;
     left: 0;
 

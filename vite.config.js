@@ -16,5 +16,6 @@ export default defineConfig({
   build: {
     outDir: "./docs"
   },
-  base: process.env.PROD ? "/trip-story/" : "/"
+  // To-do: Change base path for development
+  base: "/trip-story/"
 });
