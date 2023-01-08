@@ -38,6 +38,7 @@ let country;
 
 const updateCountry = () => {
   country = countries.find(country => country.title.toLowerCase() === props.country);
+  if (!country) return router.push("/countries");
 };
 
 const handleMoveEnd = (event) => {

@@ -47,8 +47,13 @@ let location;
 
 const updateLocation = () => {
   if (country?.title.toLowerCase() !== props.country) country = countries.find(country => country.title.toLowerCase() === props.country);
+  if (!country) return router.push("/countries");
+
   if (city?.title.toLowerCase() !== props.city) city = country.cities.find(city => city.title.toLowerCase() === props.city);
+  if (!city) return router.push("/countries/" + country);
+
   location = city.locations.find(location => location.title.toLowerCase() === props.location);
+  if (!location) return router.push("/countries/" + country + "/" + city);
 };
 
 const getImage = (image) => {

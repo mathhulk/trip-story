@@ -40,7 +40,10 @@ let city;
 
 const updateCity = () => {
   if (country?.title.toLowerCase() !== props.country) country = countries.find(country => country.title.toLowerCase() === props.country);
+  if (!country) return router.push("/countries");
+
   city = country.cities.find(city => city.title.toLowerCase() === props.city);
+  if (!city) return router.push("/countries/" + country);
 };
 
 const handleMoveEnd = (event) => {
