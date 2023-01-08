@@ -89,6 +89,7 @@ const handleClick = (title) => {
   router.push("/countries/" + countryIdentifier + "/" + cityIdentifier + "/" + locationIdentifier);
 };
 
+// To-do: Use map.jumpTo for initial page load and prefers-reduced-motion
 const enter = () => {
   props.map.on("moveend", handleMoveEnd);
   props.map.setStyle("mapbox://styles/mathhulk/cl0ovzd7j000u14mlcv35f827");

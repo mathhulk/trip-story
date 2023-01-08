@@ -78,6 +78,7 @@ const getMarkerClass = (reverse) => {
   return { "marker-reverse": reverse };
 };
 
+// To-do: Use map.jumpTo for initial page load and prefers-reduced-motion
 const enter = () => {
   props.map.on("moveend", handleMoveEnd);
   props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");

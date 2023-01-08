@@ -1,4 +1,5 @@
 <template>
+  <!-- To-do: Mobile compatibility -->
   <div id="map" />
 
   <template v-if="active">

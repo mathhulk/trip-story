@@ -64,6 +64,7 @@ const handleMoveEnd = (event) => {
   }
 };
 
+// To-do: Use map.jumpTo for initial page load and prefers-reduced-motion
 onMounted(() => {  
   props.map.on("moveend", handleMoveEnd);
   props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
