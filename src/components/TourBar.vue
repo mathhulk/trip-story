@@ -1,8 +1,8 @@
 <template>
+  <img v-if="!tour" class="tour-tip" src="../assets/images/drawing.png">
+
   <div class="tour-bar">
     <div v-show="tour" class="tour-bar-indicator" ref="indicator" @animationend="skipNext" />
-
-    <img v-if="!tour" class="tour-bar-drawing" src="../assets/images/drawing.png">
 
     <div v-if="tour" class="tour-bar-button" @click="end(true)">
       <FeatherIcon icon="x" />
@@ -170,6 +170,16 @@ watch(() => route.params, () => {
 </script>
 
 <style lang="scss" scoped>
+.tour-tip {
+  position: absolute;
+
+  height: 32px;
+  width: 128px;
+
+  top: 72px;
+  left: 144px;
+}
+
 .tour-bar {
   border-radius: 4px;
 
@@ -179,20 +189,12 @@ watch(() => route.params, () => {
 
   position: absolute;
 
+  overflow: hidden;
+
   top: 16px;
   left: 120px;
 
   padding: 8px;
-
-  .tour-bar-drawing {
-    position: absolute;
-
-    height: 32px;
-    width: 128px;
-
-    bottom: -40px;
-    left: 24px;
-  }
 
   @keyframes time {
     0% {
@@ -212,8 +214,6 @@ watch(() => route.params, () => {
     background-color: black;
 
     position: absolute;
-
-    border-radius: 4px;
 
     top: 0;
     left: 0;
