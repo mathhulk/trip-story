@@ -15,7 +15,9 @@ const countries = [
           {
             title: "Palace of Versailles",
             description: "Château de Versailles",
-            center: [ 2.1204217755070, 48.80493919355 ]
+            center: [ 2.1204217755070, 48.80493919355 ],
+            cover: 184,
+            images: [ 185, 186, 187, 188, 189, 190, 191, 192 ]
           }
         ]
       },
@@ -268,28 +270,28 @@ const countries = [
             description: "Grote Markt",
             center: [ 3.2244145507660, 51.208707397282 ],
             cover: 12,
-            images: [ 13, 14 ]
+            images: [ 13, 14, 200 ]
           },
           {
             title: "Hotel Bourgoensch Hof",
             description: "Hotel",
             center: [ 3.226543485844574, 51.20741546437233 ],
             cover: 15,
-            images: [ 16, 17, 18, 19 ]
+            images: [ 16, 17, 18, 19, 193, 194, 195, 201, 210 ]
           },
           {
             title: "Rosary Quay",
             description: "Rozenhoedkaai",
             center: [ 3.22781545941, 51.20743287709 ],
             cover: 20,
-            images: [ 21, 22, 23 ]
+            images: [ 21, 22, 23, 202 ]
           },
           {
             title: "Church of Our Lady Bruges",
             description: "Onze Lieve Vrouw Brugge",
             center: [ 3.224456367048, 51.20471967725 ],
             cover: 24,
-            images: [ 25, 26, 27 ]
+            images: [ 25, 26, 27, 196, 197, 198, 199 ]
           },
           {
             title: "Boniface Bridge",
@@ -303,7 +305,20 @@ const countries = [
             description: "De Vier Ruiters Van De Apocalyps",
             center: [ 3.225653903764, 51.20524876976 ],
             cover: 31,
-            images: [ 32, 33 ]
+            images: [ 32, 33, 206 ]
+          },
+          {
+            title: "Spiegelrei",
+            description: "Tourist attraction",
+            center: [ 3.227696499315, 51.21206089379 ],
+            cover: 203,
+            images: [ 204, 205 ]
+          },
+          {
+            title: "Torture Museum Oude Steen",
+            description: "History museum",
+            center: [ 3.2260993984664, 51.2077145883 ],
+            images: [ 207, 208, 209 ]
           }
         ]
       }
