@@ -1,8 +1,13 @@
 <template>
-  <img v-if="!tour" class="tour-tip" src="../assets/images/drawing.png">
+  <img v-if="!tour" class="tour-tip" src="../assets/images/drawing.png" />
 
   <div class="tour-bar">
-    <div v-show="tour" class="tour-bar-indicator" ref="indicator" @animationend="skipNext" />
+    <div
+      v-show="tour"
+      class="tour-bar-indicator"
+      ref="indicator"
+      @animationend="() => skipNext()"
+    />
 
     <div v-if="tour" class="tour-bar-button" @click="end(true)">
       <FeatherIcon icon="x" />
@@ -12,25 +17,37 @@
       <FeatherIcon icon="play" />
     </div>
 
-    <div class="tour-bar-button" :class="{ disabled: !tour || skipPreviousDisabled }" @click="skipPrevious">
+    <div
+      class="tour-bar-button"
+      :class="{ disabled: !tour || skipPreviousDisabled }"
+      @click="() => skipPrevious()"
+    >
       <FeatherIcon icon="skip-back" />
     </div>
 
-    <div class="tour-bar-button" :class="{ disabled: !tour }" @click="togglePaused">
+    <div
+      class="tour-bar-button"
+      :class="{ disabled: !tour }"
+      @click="() => togglePaused()"
+    >
       <FeatherIcon :icon="icon" />
     </div>
 
-    <div class="tour-bar-button" :class="{ disabled: !tour || skipNextDisabled }" @click="skipNext(true)">
+    <div
+      class="tour-bar-button"
+      :class="{ disabled: !tour || skipNextDisabled }"
+      @click="() => skipNext(true)"
+    >
       <FeatherIcon icon="skip-forward" />
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import FeatherIcon from "@/components/FeatherIcon.vue";
-import countries from "@/countries.js";
+import { countries } from "@/lib/countries";
 
 const router = useRouter();
 const route = useRoute();
@@ -38,11 +55,11 @@ const route = useRoute();
 const tour = ref(false);
 const paused = ref(false);
 
-const countryIndex = ref(null);
-const cityIndex = ref(null);
-const locationIndex = ref(null);
+const countryIndex = ref<number | null>(null);
+const cityIndex = ref<number | null>(null);
+const locationIndex = ref<number | null>(null);
 
-const indicator = ref(null);
+const indicator = ref<HTMLDivElement | null>(null);
 
 const start = () => {
   tour.value = true;
@@ -60,19 +77,36 @@ const icon = computed(() => {
 });
 
 const skipPreviousDisabled = computed(() => {
-  return locationIndex.value === 0 && cityIndex.value === 0 && countryIndex.value === 0;
+  return (
+    locationIndex.value === 0 &&
+    cityIndex.value === 0 &&
+    countryIndex.value === 0
+  );
 });
 
 const skipNextDisabled = computed(() => {
-  return locations.value.length === locationIndex.value + 1 && cities.value.length === cityIndex.value + 1 && countries.length === countryIndex.value + 1;
+  if (
+    countryIndex.value === null ||
+    cityIndex.value === null ||
+    locationIndex.value === null
+  )
+    return true;
+
+  return (
+    locations.value.length === locationIndex.value + 1 &&
+    cities.value.length === cityIndex.value + 1 &&
+    countries.length === countryIndex.value + 1
+  );
 });
 
 const cities = computed(() => {
-  return countries[countryIndex.value].cities;
+  if (countryIndex.value === null) return [];
+  return countries[countryIndex.value]?.cities ?? [];
 });
 
 const locations = computed(() => {
-  return cities.value[cityIndex.value].locations;
+  if (cityIndex.value === null) return [];
+  return cities.value[cityIndex.value]?.locations ?? [];
 });
 
 const skipNext = (user = true) => {
@@ -83,8 +117,18 @@ const skipNext = (user = true) => {
 
     return;
   }
-  
-  if (locations.value.length === locationIndex.value + 1 && cities.value.length === cityIndex.value + 1) {
+
+  if (
+    countryIndex.value === null ||
+    cityIndex.value === null ||
+    locationIndex.value === null
+  )
+    return;
+
+  if (
+    locations.value.length === locationIndex.value + 1 &&
+    cities.value.length === cityIndex.value + 1
+  ) {
     countryIndex.value++;
     cityIndex.value = 0;
     locationIndex.value = 0;
@@ -100,12 +144,19 @@ const skipNext = (user = true) => {
 
 const skipPrevious = () => {
   if (skipPreviousDisabled.value || !tour.value) return;
-  
-  if (locationIndex === 0 && cityIndex === 0) {
+
+  if (
+    locationIndex.value === null ||
+    cityIndex.value === null ||
+    countryIndex.value === null
+  )
+    return;
+
+  if (locationIndex.value === 0 && cityIndex.value === 0) {
     countryIndex.value--;
     cityIndex.value = cities.value.length - 1;
     locationIndex.value = locations.value.length - 1;
-  } else if (locationIndex === 0) {
+  } else if (locationIndex.value === 0) {
     cityIndex.value--;
     locationIndex.value = locations.value.length - 1;
   } else {
@@ -116,16 +167,42 @@ const skipPrevious = () => {
 };
 
 const getIdentifiers = () => {
-  const countryIdentifier = countries[countryIndex.value].title.toLowerCase();
-  const cityIdentifier = cities.value[cityIndex.value].title.toLowerCase();
-  const locationIdentifier = locations.value[locationIndex.value].title.toLowerCase();
+  if (
+    countryIndex.value === null ||
+    cityIndex.value === null ||
+    locationIndex.value === null ||
+    !countries[countryIndex.value] ||
+    !cities.value[cityIndex.value] ||
+    !locations.value[locationIndex.value]
+  )
+    return;
 
-  return { countryIdentifier, cityIdentifier, locationIdentifier };
+  const countryIdentifier = countries[countryIndex.value]!.title.toLowerCase();
+  const cityIdentifier = cities.value[cityIndex.value]!.title.toLowerCase();
+  const locationIdentifier =
+    locations.value[locationIndex.value]!.title.toLowerCase();
+
+  return {
+    country: countryIdentifier,
+    city: cityIdentifier,
+    location: locationIdentifier,
+  };
 };
 
 const updateRoute = () => {
-  const { countryIdentifier, cityIdentifier, locationIdentifier } = getIdentifiers();
-  router.push("/countries/" + countryIdentifier + "/" + cityIdentifier + "/" + locationIdentifier);
+  if (!indicator.value) return;
+
+  const identifiers = getIdentifiers();
+  if (!identifiers) return;
+
+  router.push(
+    "/countries/" +
+      identifiers.country +
+      "/" +
+      identifiers.city +
+      "/" +
+      identifiers.location
+  );
 
   // Required for replaying an animation
   indicator.value.classList.remove("active");
@@ -139,12 +216,16 @@ const updateRoute = () => {
 };
 
 const togglePaused = () => {
-  indicator.value.style.animationPlayState = paused.value ? "running" : "paused";
+  if (!indicator.value) return;
+
+  indicator.value.style.animationPlayState = paused.value
+    ? "running"
+    : "paused";
 
   paused.value = !paused.value;
 };
 
-const end = (user) => {
+const end = (user: boolean) => {
   tour.value = false;
   paused.value = false;
 
@@ -157,16 +238,26 @@ const end = (user) => {
   router.push("/countries");
 };
 
-watch(() => route.params, () => {
-  if (!tour.value) return;
+watch(
+  () => route.params,
+  () => {
+    if (!tour.value) return;
 
-  const { country, city, location } = route.params;
-  const { countryIdentifier, cityIdentifier, locationIdentifier } = getIdentifiers();
+    const { country, city, location } = route.params;
 
-  if (countryIdentifier === country && cityIdentifier === city && locationIdentifier === location) return;
+    const identifiers = getIdentifiers();
+    if (!identifiers) return;
 
-  end(true);
-});
+    if (
+      identifiers.country === country &&
+      identifiers.city === city &&
+      identifiers.location === location
+    )
+      return;
+
+    end(true);
+  }
+);
 </script>
 
 <style lang="scss" scoped>
@@ -241,14 +332,14 @@ watch(() => route.params, () => {
     transition: color 150ms ease;
 
     &.disabled {
-      color: #3C3C3C;
+      color: #3c3c3c;
     }
 
     &:not(.disabled) {
-      background-color: #3C3C3C;
+      background-color: #3c3c3c;
 
       cursor: pointer;
-      
+
       &:hover {
         color: white;
       }

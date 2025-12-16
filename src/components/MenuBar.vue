@@ -5,14 +5,20 @@
     </router-link>
 
     <router-link to="/countries" custom v-slot="{ navigate }">
-      <div @click="navigate" @keypress.enter="navigate" role="link" class="menu-bar-button" :class="{ disabled }">
+      <div
+        @click="() => navigate()"
+        @keypress.enter="() => navigate()"
+        role="link"
+        class="menu-bar-button"
+        :class="{ disabled }"
+      >
         <FeatherIcon icon="map" />
       </div>
     </router-link>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import FeatherIcon from "@/components/FeatherIcon.vue";
@@ -43,7 +49,7 @@ const disabled = computed(() => {
     left: 120px;
 
     .menu-button:not(.disabled) {
-      background-color: #3C3C3C;
+      background-color: #3c3c3c;
     }
   }
 
@@ -61,14 +67,14 @@ const disabled = computed(() => {
     transition: color 150ms ease;
 
     &.disabled {
-      color: #3C3C3C;
+      color: #3c3c3c;
     }
 
     &:not(.disabled) {
       background-color: rgba(white, 0.1);
 
       cursor: pointer;
-      
+
       &:hover {
         color: white;
       }

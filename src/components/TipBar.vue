@@ -8,7 +8,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import FeatherIcon from "@/components/FeatherIcon.vue";
 

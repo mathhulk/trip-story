@@ -15,11 +15,18 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { City, Country } from "@/lib/countries";
 import FeatherIcon from "./FeatherIcon.vue";
 import { useRouter } from "vue-router";
 
-const props = defineProps([ "country", "city", "active" ]);
+interface Props {
+  country: Country;
+  city: City;
+  active?: boolean;
+}
+
+const props = defineProps<Props>();
 
 const router = useRouter();
 

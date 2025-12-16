@@ -18,95 +18,113 @@
     </div>
 
     <div v-if="location.cover" class="side-bar-cover">
-      <img :src="getImage(location.cover)">
+      <img :src="getImage(location.cover)" />
     </div>
 
     <div class="side-bar-container">
       <div v-for="image in location.images" class="container-picture">
-        <img :src="getImage(image)">
+        <img :src="getImage(image)" />
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { onMounted, onUnmounted, ref, watch } from "vue";
+<script setup lang="ts">
+import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
 import FeatherIcon from "@/components/FeatherIcon.vue";
 import CountryMenu from "@/components/CountryMenu.vue";
 import CityMenu from "@/components/CityMenu.vue";
-import countries from "@/countries";
-import mapboxgl from "mapbox-gl";
+import {
+  countries,
+  type Country,
+  type City,
+  type Location,
+} from "@/lib/countries";
+import { Event, Marker } from "mapbox-gl";
+import useMap from "@/composables/useMap";
 
-const props = defineProps([ "country", "city", "location", "map" ]);
+const map = useMap();
 
-let marker;
+interface Props {
+  country: string;
+  city: string;
+  location: string;
+}
 
-let country;
-let city;
-let location;
+const props = defineProps<Props>();
 
-const updateLocation = () => {
-  if (country?.title.toLowerCase() !== props.country) country = countries.find(country => country.title.toLowerCase() === props.country);
-  if (!country) return router.push("/countries");
+let marker: Marker | undefined;
 
-  if (city?.title.toLowerCase() !== props.city) city = country.cities.find(city => city.title.toLowerCase() === props.city);
-  if (!city) return router.push("/countries/" + country);
+const country = computed(() => {
+  return countries.find(
+    (country) => country.title.toLowerCase() === props.country
+  ) as Country;
+});
 
-  location = city.locations.find(location => location.title.toLowerCase() === props.location);
-  if (!location) return router.push("/countries/" + country + "/" + city);
-};
+const city = computed(() => {
+  return country.value.cities.find(
+    (city) => city.title.toLowerCase() === props.city
+  ) as City;
+});
 
-const getImage = (image) => {
-  return new URL(`../assets/images/locations/${image}.jpg`, import.meta.url).href;
+const location = computed(() => {
+  return city.value.locations.find(
+    (location) => location.title.toLowerCase() === props.location
+  ) as Location;
+});
+
+const getImage = (image: number) => {
+  return new URL(`../assets/images/locations/${image}.jpg`, import.meta.url)
+    .href;
 };
 
 const copy = () => navigator.clipboard.writeText(window.location.href);
 
-const handleMoveEnd = (event) => {
-  if (event.view !== location.title) return;
-  
-  marker = new mapboxgl.Marker({ 
+const handleMoveEnd = (event: Event & { view?: string }) => {
+  if (event.view !== location.value.title) return;
+
+  marker = new Marker({
     color: "#2d2d2d",
     anchor: "center",
-    offset: [ 0, 0 ]
+    offset: [0, 0],
   })
-    .setLngLat(location.center)
-    .addTo(props.map);
+    .setLngLat(location.value.center)
+    .addTo(map);
 };
 
 // To-do: Use map.jumpTo for initial page load and prefers-reduced-motion
 const enter = () => {
-  props.map.on("moveend", handleMoveEnd);
-  props.map.setStyle("mapbox://styles/mathhulk/clcb14wmh00ac14s84f2zg7fn");
+  map.on("moveend", handleMoveEnd);
+  map.setStyle("mapbox://styles/mathhulk/clcb14wmh00ac14s84f2zg7fn");
 
-  const options = {
-    duration: 2500,
-    zoom: 18,
-    pitch: 50,
-    center: location.center,
-    // To-do: Fix additive padding bug in Mapbox GL JS
-    padding: { left: 0, right: 400, top: 0, bottom: 0 }
-  };
-
-  props.map.flyTo(options, { view: location.title });
+  map.flyTo(
+    {
+      duration: 2500,
+      zoom: 18,
+      pitch: 50,
+      center: location.value.center,
+      // To-do: Fix additive padding bug in Mapbox GL JS
+      padding: { left: 0, right: 400, top: 0, bottom: 0 },
+    },
+    { view: location.value.title }
+  );
 };
 
 const exit = () => {
-  props.map.off("moveend", handleMoveEnd);
-
-  if (marker) marker.remove();
+  map.off("moveend", handleMoveEnd);
+  marker?.remove();
 };
 
 onMounted(enter);
 onUnmounted(exit);
 
-watch(() => props.location, () => {
-  updateLocation();
-  exit();
-  enter();
-});
-
-updateLocation();
+watch(
+  () => props.location,
+  () => {
+    exit();
+    nextTick(enter);
+  }
+);
 </script>
 
 <style lang="scss" scoped>
@@ -119,7 +137,7 @@ updateLocation();
   width: 768px;
   height: 100%;
 
-  background: linear-gradient(to left, #E5E3CD 384px, transparent);
+  background: linear-gradient(to left, #e5e3cd 384px, transparent);
 }
 
 .side-bar {

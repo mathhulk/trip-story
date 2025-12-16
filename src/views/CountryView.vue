@@ -3,10 +3,10 @@
     <CountryMenu :country="country" :active="true" />
   </div>
 
-  <div 
-    v-show="active" 
-    class="marker" 
-    v-for="city in country.cities" 
+  <div
+    v-show="active"
+    class="marker"
+    v-for="city in country.cities"
     :class="getMarkerClass(city.reverse)"
     ref="templates"
     @click="handleClick(city.title)"
@@ -18,93 +18,108 @@
   </div>
 </template>
 
-<script setup>
-import { onMounted, onUnmounted, ref, watch, nextTick } from "vue";
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref, watch, nextTick, computed } from "vue";
 import { useRouter } from "vue-router";
 import CountryMenu from "@/components/CountryMenu.vue";
-import countries from "@/countries";
-import mapboxgl from "mapbox-gl";
+import { countries, type Country } from "@/lib/countries";
+import mapboxgl, {
+  Event,
+  Marker,
+  type EasingOptions,
+  type LngLatBoundsLike,
+} from "mapbox-gl";
+import useMap from "@/composables/useMap";
 
-const props = defineProps([ "country", "map" ]);
+interface Props {
+  country: string;
+}
 
+const props = defineProps<Props>();
+
+const map = useMap();
 const router = useRouter();
+
+let markers: Marker[] = [];
 
 // To-do: Is there a better way to organize this component..?
 const active = ref(false);
 const templates = ref([]);
-const markers = [];
 
-let country;
+const country = computed(() => {
+  return countries.find(
+    (country) => country.title.toLowerCase() === props.country
+  ) as Country;
+});
 
-const updateCountry = () => {
-  country = countries.find(country => country.title.toLowerCase() === props.country);
-  if (!country) return router.push("/countries");
-};
-
-const handleMoveEnd = (event) => {
-  if (event.view !== country.title) return;
+const handleMoveEnd = (event: Event & { view?: string }) => {
+  if (event.view !== country.value.title) return;
 
   active.value = true;
 
-  for (const cityIndex in country.cities) {
-    const { center, reverse } = country.cities[cityIndex];
+  for (const cityIndex in country.value.cities) {
+    const { center, reverse } = country.value.cities[cityIndex]!;
 
-    const marker = new mapboxgl.Marker({ 
-      element: templates.value[cityIndex], 
+    const marker = new mapboxgl.Marker({
+      element: templates.value[cityIndex],
       // Disable panning
       draggable: true,
       anchor: reverse ? "top" : "bottom",
-      offset: [ 16, reverse ? 8 : 24 ]
+      offset: [16, reverse ? 8 : 24],
     })
       .setLngLat(center)
-      .addTo(props.map);
+      .addTo(map);
 
     markers.push(marker);
   }
 };
 
-// Disable dragging 
-const handleMouseDown = (event) => {
+// Disable dragging
+const handleMouseDown = (event: MouseEvent) => {
   event.stopPropagation();
 };
 
-const handleClick = (title) => {
-  const countryIdentifier = country.title.toLowerCase();
+const handleClick = (title: string) => {
+  const countryIdentifier = country.value.title.toLowerCase();
   const cityIdentifier = title.toLowerCase();
   router.push("/countries/" + countryIdentifier + "/" + cityIdentifier);
 };
 
-const getMarkerClass = (reverse) => {
+const getMarkerClass = (reverse?: boolean) => {
   return { "marker-reverse": reverse };
 };
 
 // To-do: Use map.jumpTo for initial page load and prefers-reduced-motion
 const enter = () => {
-  props.map.on("moveend", handleMoveEnd);
-  props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
+  map.on("moveend", handleMoveEnd);
 
-  const options = {
+  map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
+
+  const options: EasingOptions = {
     duration: 2500,
     pitch: 0,
     // To-do: Fix additive padding bug in Mapbox GL JS
-    padding: { left: 128, right: 128, top: 0, bottom: 0 }
+    padding: { left: 128, right: 128, top: 0, bottom: 0 },
   };
 
   // fitBounds seems to hang when a single point was supplied or
   // the LngLat includes too many numbers after the decimal..?
-  if (country.cities.length === 1) {
-    options.center = country.cities[0].center;
+  if (country.value.cities.length === 1) {
+    options.center = country.value.cities[0]!.center;
     options.zoom = 7;
 
-    props.map.flyTo(options, { view: country.title });
+    map.flyTo(options, { view: country.value.title });
 
     return;
   }
-  
-  let xMinimum, yMinimum, xMaximum, yMaximum;
 
-  for (const cityIndex in country.cities) {
-    const [ longitude, latitude ] = country.cities[cityIndex].center;
+  let xMinimum = Infinity;
+  let xMaximum = -Infinity;
+  let yMinimum = Infinity;
+  let yMaximum = -Infinity;
+
+  for (const cityIndex in country.value.cities) {
+    const [longitude, latitude] = country.value.cities[cityIndex]!.center;
 
     xMinimum = xMinimum < longitude ? xMinimum : longitude;
     xMaximum = xMaximum > longitude ? xMaximum : longitude;
@@ -112,32 +127,32 @@ const enter = () => {
     yMaximum = yMaximum > latitude ? yMaximum : latitude;
   }
 
-  const bounds = [ 
-    [ xMinimum, yMinimum ], 
-    [ xMaximum, yMaximum ] 
+  const bounds: LngLatBoundsLike = [
+    [xMinimum, yMinimum],
+    [xMaximum, yMaximum],
   ];
 
   options.maxZoom = 7;
 
-  props.map.fitBounds(bounds, options, { view: country.title });
+  map.fitBounds(bounds, options, { view: country.value.title });
 };
 
 const exit = () => {
-  props.map.off("moveend", handleMoveEnd);
-
+  map.off("moveend", handleMoveEnd);
   for (const marker of markers) marker.remove();
+  markers = [];
 };
 
 onMounted(enter);
 onUnmounted(exit);
 
-watch(() => props.country, () => {
-  updateCountry();
-  exit();
-  nextTick(enter);
-});
-
-updateCountry();
+watch(
+  () => props.country,
+  () => {
+    exit();
+    nextTick(enter);
+  }
+);
 </script>
 
 <style lang="scss" scoped>
@@ -183,7 +198,7 @@ updateCountry();
     font-size: 14px;
     font-weight: 500;
     color: white;
-    line-height: 1;  
+    line-height: 1;
   }
 
   .marker-icon {

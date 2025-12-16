@@ -17,11 +17,11 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import FeatherIcon from "./FeatherIcon.vue";
 import { useRouter } from "vue-router";
 
-const props = defineProps([ "country", "active" ]);
+const props = defineProps(["country", "active"]);
 
 const router = useRouter();
 

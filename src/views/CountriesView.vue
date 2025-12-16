@@ -1,11 +1,11 @@
 <template>
-  <div 
-    class="marker" 
-    v-show="active" 
-    v-for="country in countries" 
-    @mousedown="handleMouseDown" 
-    @click="handleClick(country.title)" 
-    :key="country.title" 
+  <div
+    class="marker"
+    v-show="active"
+    v-for="country in countries"
+    @mousedown="handleMouseDown"
+    @click="handleClick(country.title)"
+    :key="country.title"
     ref="templates"
   >
     <div class="marker-tooltip">
@@ -18,61 +18,66 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import mapboxgl from "mapbox-gl";
-import countries from "@/countries";
+import mapboxgl, { Event, Marker, type LngLatBoundsLike } from "mapbox-gl";
+import { countries } from "@/lib/countries";
+import useMap from "@/composables/useMap";
 
-const props = defineProps([ "map" ]);
-
+const map = useMap();
 const router = useRouter();
+
+let markers: Marker[] = [];
 
 // To-do: Is there a better way to organize this component..?
 const active = ref(false);
 const templates = ref([]);
-const markers = [];
 
-// Disable dragging 
-const handleMouseDown = (event) => {
+// Disable dragging
+const handleMouseDown = (event: MouseEvent) => {
   event.stopPropagation();
 };
 
-const handleClick = (title) => {
+const handleClick = (title: string) => {
   const countryIdentifier = title.toLowerCase();
   router.push("/countries/" + countryIdentifier);
 };
 
-const handleMoveEnd = (event) => {
+const handleMoveEnd = (event: Event & { view?: string }) => {
   if (event.view !== "countries") return;
-  
+
   active.value = true;
 
   for (const countryIndex in countries) {
-    const { center } = countries[countryIndex];
+    const { center } = countries[countryIndex]!;
 
     const marker = new mapboxgl.Marker({
       element: templates.value[countryIndex],
       anchor: "bottom",
       // Disable panning
-      draggable: true
+      draggable: true,
     })
       .setLngLat(center)
-      .addTo(props.map);
+      .addTo(map);
 
     markers.push(marker);
   }
 };
 
 // To-do: Use map.jumpTo for initial page load and prefers-reduced-motion
-onMounted(() => {  
-  props.map.on("moveend", handleMoveEnd);
-  props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
+onMounted(() => {
+  map.on("moveend", handleMoveEnd);
 
-  let xMinimum, yMinimum, xMaximum, yMaximum;
+  map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
+
+  let xMinimum = Infinity;
+  let xMaximum = -Infinity;
+  let yMinimum = Infinity;
+  let yMaximum = -Infinity;
 
   for (const country of countries) {
-    const [ longitude, latitude ] = country.center;
+    const [longitude, latitude] = country.center;
 
     xMinimum = xMinimum < longitude ? xMinimum : longitude;
     xMaximum = xMaximum > longitude ? xMaximum : longitude;
@@ -85,21 +90,21 @@ onMounted(() => {
     maxZoom: 5,
     pitch: 0,
     // To-do: Fix additive padding bug in Mapbox GL JS
-    padding: { top: 0, left: 0, right: 0, bottom: 0 }
+    padding: { top: 0, left: 0, right: 0, bottom: 0 },
   };
 
-  const bounds = [
-    [ xMinimum, yMinimum ], 
-    [ xMaximum, yMaximum ]
+  const bounds: LngLatBoundsLike = [
+    [xMinimum, yMinimum],
+    [xMaximum, yMaximum],
   ];
 
-  props.map.fitBounds(bounds, options, { view: "countries" });
+  map.fitBounds(bounds, options, { view: "countries" });
 });
 
 onUnmounted(() => {
-  props.map.off("moveend", handleMoveEnd);
-
+  map.off("moveend", handleMoveEnd);
   for (const marker of markers) marker.remove();
+  markers = [];
 });
 </script>
 
@@ -129,7 +134,7 @@ onUnmounted(() => {
       font-size: 14px;
       font-weight: 500;
       color: white;
-      line-height: 1;  
+      line-height: 1;
       font-family: "Inter", sans-serif;
 
       padding: 8px 16px;

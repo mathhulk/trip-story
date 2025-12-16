@@ -1,16 +1,27 @@
 <template>
-  <div :class="{ active }" class="trip">  
+  <div :class="{ active }" class="trip">
     <div class="trip-text">
-     <div class="trip-icon">
-        <FeatherIcon icon="heart" :width="12" :height="12" fill="currentColor" />
+      <div class="trip-icon">
+        <FeatherIcon
+          icon="heart"
+          :width="12"
+          :height="12"
+          fill="currentColor"
+        />
       </div>
 
-      <p class="trip-title"><span class="location location-france">France</span> and <span class="location location-belgium">Belgium</span> with love</p>
+      <p class="trip-title">
+        <span class="location location-france">France</span> and
+        <span class="location location-belgium">Belgium</span> with love
+      </p>
 
-      <p class="trip-description">Annika, I know this might not come as a surprise, 
-        but I really wanted you to know how much of a positive impact our trips have on me.
-        Once again, I hope you enjoy this interactive map which will allow us to look back
-        on the memories we made in France and Belgium whenever we want. <span class="important">With love, Matthew</span>.</p>
+      <p class="trip-description">
+        Annika, I know this might not come as a surprise, but I really wanted
+        you to know how much of a positive impact our trips have on me. Once
+        again, I hope you enjoy this interactive map which will allow us to look
+        back on the memories we made in France and Belgium whenever we want.
+        <span class="important">With love, Matthew</span>.
+      </p>
 
       <router-link to="/countries" class="trip-button">
         <div class="button-icon">
@@ -23,43 +34,45 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref, onUnmounted } from "vue";
-import FeatherIcon from "../components/FeatherIcon.vue";
+import FeatherIcon from "@/components/FeatherIcon.vue";
+import useMap from "@/composables/useMap";
+import type { Event } from "mapbox-gl";
 
-const props = defineProps([ "map" ]);
+const map = useMap();
 
 const active = ref(false);
 
-const handleMoveEnd = (event) => {
+const handleMoveEnd = (event: Event & { view?: string }) => {
   if (event.view !== "trip") return;
-
   active.value = true;
 };
 
 onMounted(() => {
-  props.map.on("moveend", handleMoveEnd);
+  map.on("moveend", handleMoveEnd);
 
-  props.map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
+  map.setStyle("mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60");
 
-  const location = {
-    center: [ -40.852003, 38.710733 ],
-    zoom: 2,
-    duration: 2500,
-    pitch: 0,
-    padding: {
-      right: 0,
-      left: 448,
-      top: 0,
-      bottom: 0
-    }
-  };
-
-  props.map.flyTo(location, { view: "trip" });
+  map.flyTo(
+    {
+      center: [-40.852003, 38.710733],
+      zoom: 2,
+      duration: 2500,
+      pitch: 0,
+      padding: {
+        right: 0,
+        left: 448,
+        top: 0,
+        bottom: 0,
+      },
+    },
+    { view: "trip" }
+  );
 });
 
 onUnmounted(() => {
-  props.map.off("moveend", handleMoveEnd);
+  map.off("moveend", handleMoveEnd);
 });
 </script>
 
@@ -75,7 +88,7 @@ onUnmounted(() => {
 
   display: flex;
   align-items: center;
-  
+
   padding: 0 32px;
 
   opacity: 0;
@@ -136,7 +149,7 @@ onUnmounted(() => {
         color: #262626;
         font-weight: 500;
 
-        border-bottom: 2px solid rgba(0,0,0,.1);
+        border-bottom: 2px solid rgba(0, 0, 0, 0.1);
       }
     }
 

@@ -4,52 +4,56 @@
 
   <template v-if="active">
     <TipBar />
-
     <TourBar />
-
     <MenuBar />
   </template>
 
-  <div v-if="loading" class="loading">
+  <div v-if="loading || !map" class="loading">
     <div class="loading-icon" />
-
     <p class="loading-text">Loading...</p>
   </div>
-  
-  <router-view v-else :map="map" />
+
+  <MapProvider v-else :map="map">
+    <router-view />
+  </MapProvider>
 </template>
 
-<script setup>
-import mapboxgl from "mapbox-gl";
-import { onMounted, ref, computed } from "vue";
+<script setup lang="ts">
+import { Map } from "mapbox-gl";
+import { onMounted, ref, computed, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
+import MapProvider from "@/components/MapProvider.vue";
 import MenuBar from "@/components/MenuBar.vue";
 import TipBar from "@/components/TipBar.vue";
 import TourBar from "@/components/TourBar.vue";
 
-mapboxgl.accessToken = "pk.eyJ1IjoibWF0aGh1bGsiLCJhIjoiY2t6bTFhcDU2M2prOTJwa3VwcTJ2d2dpMiJ9.WEJWEP_qrKGXkYOgbIsaGg";
-
-const map = ref(null);
-const loading = ref(true);
-
 const route = useRoute();
+
+let map: Map | undefined;
+
+const loading = ref(true);
 
 const active = computed(() => {
   return route.name !== "Trip";
 });
 
 onMounted(() => {
-  map.value = new mapboxgl.Map({
+  map = new Map({
     container: "map",
     style: "mapbox://styles/mathhulk/clbznbvgs000314k8gtwa9q60",
     attributionControl: false,
-    center: [ -120.153851, 37.298538 ],
-    zoom: 5
+    center: [-120.153851, 37.298538],
+    accessToken: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN,
+    zoom: 5,
   });
 
-  map.value.on("load", () => {
+  map.on("load", () => {
     loading.value = false;
   });
+});
+
+onUnmounted(() => {
+  map?.remove();
 });
 </script>
 

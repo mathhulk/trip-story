@@ -5,10 +5,10 @@
     <CityMenu :country="country" :city="city" :active="true" />
   </div>
 
-  <div 
-    class="location-marker" 
+  <div
+    class="location-marker"
     v-show="active"
-    v-for="location in city.locations" 
+    v-for="location in city.locations"
     ref="templates"
     @click="handleClick(location.title)"
     @mousedown="handleMouseDown"
@@ -16,106 +16,131 @@
   />
 </template>
 
-<script setup>
-import { onMounted, onUnmounted, ref, watch, nextTick } from "vue";
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref, watch, nextTick, computed } from "vue";
 import { useRouter } from "vue-router";
 import CountryMenu from "@/components/CountryMenu.vue";
 import CityMenu from "@/components/CityMenu.vue";
-import countries from "@/countries";
-import mapboxgl from "mapbox-gl";
-import tippy from "tippy.js";
+import { countries, type City, type Country } from "@/lib/countries";
+import {
+  Event,
+  Marker,
+  type EasingOptions,
+  type LngLatBoundsLike,
+} from "mapbox-gl";
+import tippy, { type Instance } from "tippy.js";
+import useMap from "@/composables/useMap";
 
-const props = defineProps([ "country", "city", "map" ]);
+interface Props {
+  country: string;
+  city: string;
+}
 
+const props = defineProps<Props>();
+
+const map = useMap();
 const router = useRouter();
+
+let markers: Marker[] = [];
+let tooltips: Instance[] = [];
 
 // To-do: Is there a better way to organize this component..?
 const active = ref(false);
 const templates = ref([]);
-const markers = [];
-let tooltips;
 
-let country;
-let city;
+const country = computed(() => {
+  return countries.find(
+    (country) => country.title.toLowerCase() === props.country
+  ) as Country;
+});
 
-const updateCity = () => {
-  if (country?.title.toLowerCase() !== props.country) country = countries.find(country => country.title.toLowerCase() === props.country);
-  if (!country) return router.push("/countries");
+const city = computed(() => {
+  return country.value.cities.find(
+    (city) => city.title.toLowerCase() === props.city
+  ) as City;
+});
 
-  city = country.cities.find(city => city.title.toLowerCase() === props.city);
-  if (!city) return router.push("/countries/" + country);
-};
-
-const handleMoveEnd = (event) => {
-  if (event.view !== city.title) return;
+const handleMoveEnd = (event: Event & { view?: string }) => {
+  if (event.view !== city.value.title) return;
 
   active.value = true;
 
   tooltips = tippy("[data-tooltip]", {
-    arrow: false, 
-    offset: [ 0, 10 ],
+    arrow: false,
+    offset: [0, 10],
     animation: "fade",
     duration: 150,
     maxWidth: 512,
-    content: (reference) => reference.getAttribute("data-tooltip")
+    content: (reference) => reference.getAttribute("data-tooltip")!,
   });
 
-  for (const locationIndex in city.locations) {
-    const { center } = city.locations[locationIndex];
+  for (const locationIndex in city.value.locations) {
+    const { center } = city.value.locations[locationIndex]!;
 
-    const marker = new mapboxgl.Marker({ 
-      element: templates.value[locationIndex], 
+    const marker = new Marker({
+      element: templates.value[locationIndex],
       // Disable panning
       draggable: true,
-      anchor: "center"
+      anchor: "center",
     })
       .setLngLat(center)
-      .addTo(props.map);
+      .addTo(map);
 
     markers.push(marker);
   }
 };
 
-// Disable dragging 
-const handleMouseDown = (event) => {
+// Disable dragging
+const handleMouseDown = (event: MouseEvent) => {
   event.stopPropagation();
 };
 
-const handleClick = (title) => {
-  const countryIdentifier = country.title.toLowerCase();
-  const cityIdentifier = city.title.toLowerCase();
+const handleClick = (title: string) => {
+  const countryIdentifier = country.value.title.toLowerCase();
+  const cityIdentifier = city.value.title.toLowerCase();
   const locationIdentifier = title.toLowerCase();
 
-  router.push("/countries/" + countryIdentifier + "/" + cityIdentifier + "/" + locationIdentifier);
+  router.push(
+    "/countries/" +
+      countryIdentifier +
+      "/" +
+      cityIdentifier +
+      "/" +
+      locationIdentifier
+  );
 };
 
 // To-do: Use map.jumpTo for initial page load and prefers-reduced-motion
 const enter = () => {
-  props.map.on("moveend", handleMoveEnd);
-  props.map.setStyle("mapbox://styles/mathhulk/cl0ovzd7j000u14mlcv35f827");
+  map.on("moveend", handleMoveEnd);
 
-  const options = {
+  map.setStyle("mapbox://styles/mathhulk/cl0ovzd7j000u14mlcv35f827");
+
+  const options: EasingOptions = {
     duration: 2500,
     pitch: 0,
     // To-do: Fix additive padding bug in Mapbox GL JS
-    padding: { left: 128, right: 128, top: 128, bottom: 128 }
+    padding: { left: 128, right: 128, top: 128, bottom: 128 },
   };
 
   // fitBounds seems to hang when a single point was supplied or
   // the LngLat includes too many numbers after the decimal..?
-  if (city.locations.length === 1) {
-    options.center = city.locations[0].center;
+  if (city.value.locations.length === 1) {
+    options.center = city.value.locations[0]!.center;
     options.zoom = 15;
 
-    props.map.flyTo(options, { view: city.title });
+    map.flyTo(options, { view: city.value.title });
 
     return;
-  };
-  
-  let xMinimum, yMinimum, xMaximum, yMaximum;
+  }
 
-  for (const locationIndex in city.locations) {
-    const [ longitude, latitude ] = city.locations[locationIndex].center;
+  let xMinimum = Infinity;
+  let xMaximum = -Infinity;
+  let yMinimum = Infinity;
+  let yMaximum = -Infinity;
+
+  for (const locationIndex in city.value.locations) {
+    const [longitude, latitude] = city.value.locations[locationIndex]!.center;
 
     xMinimum = xMinimum < longitude ? xMinimum : longitude;
     xMaximum = xMaximum > longitude ? xMaximum : longitude;
@@ -123,23 +148,24 @@ const enter = () => {
     yMaximum = yMaximum > latitude ? yMaximum : latitude;
   }
 
-  const bounds = [ 
-    [ xMinimum, yMinimum ], 
-    [ xMaximum, yMaximum ] 
+  const bounds: LngLatBoundsLike = [
+    [xMinimum, yMinimum],
+    [xMaximum, yMaximum],
   ];
 
   options.maxZoom = 15;
 
-  props.map.fitBounds(bounds, options, { view: city.title });
+  map.fitBounds(bounds, options, { view: city.value.title });
 };
 
 const exit = () => {
-  props.map.off("moveend", handleMoveEnd);
+  map.off("moveend", handleMoveEnd);
 
   for (const marker of markers) marker.remove();
-  if (tooltips) for (const tooltip of tooltips) tooltip.destroy();
+  markers = [];
 
-  markers.value = [];
+  for (const tooltip of tooltips) tooltip.destroy();
+  tooltips = [];
 
   active.value = false;
 };
@@ -147,13 +173,13 @@ const exit = () => {
 onMounted(enter);
 onUnmounted(exit);
 
-watch(() => props.city, () => {
-  updateCity();
-  exit();
-  nextTick(enter);
-});
-
-updateCity();
+watch(
+  () => props.city,
+  () => {
+    exit();
+    nextTick(enter);
+  }
+);
 </script>
 
 <style lang="scss">

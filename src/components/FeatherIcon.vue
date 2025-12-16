@@ -2,38 +2,26 @@
   <div class="feather-icon" v-html="html" />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
-import feather from "feather-icons";
+import feather, { type FeatherIconNames } from "feather-icons";
 
-const props = defineProps({
-  icon: {
-    type: String,
-    required: true
-  },
+interface Props {
+  icon: FeatherIconNames;
+  width?: number;
+  height?: number;
+  color?: string;
+  fill?: string;
+}
 
-  width: {
-    type: Number,
-    default: 16
-  },
-
-  height: {
-    type: Number,
-    default: 16
-  },
-
-  color: {
-    type: String,
-    default: "currentColor"
-  },
-  
-  fill: {
-    type: String,
-    default: "none"
-  }
-});
+const props = defineProps<Props>();
 
 const html = computed(() => {
-  return feather.icons[props.icon].toSvg({ width: props.width, height: props.height, color: props.color, fill: props.fill });
+  return feather.icons[props.icon].toSvg({
+    width: props.width ?? 16,
+    height: props.height ?? 16,
+    color: props.color ?? "currentColor",
+    fill: props.fill ?? "none",
+  });
 });
 </script>
