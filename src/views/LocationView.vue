@@ -95,12 +95,15 @@ const handleMoveEnd = (event: Event & { view?: string }) => {
 // To-do: Use map.jumpTo for initial page load and prefers-reduced-motion
 const enter = () => {
   map.on("moveend", handleMoveEnd);
-  map.setStyle("mapbox://styles/mathhulk/clcb14wmh00ac14s84f2zg7fn");
+
+  // map.setStyle("mapbox://styles/mathhulk/clcb14wmh00ac14s84f2zg7fn");
+
+  map.setStyle("mapbox://styles/mathhulk/cmj8yn1ba002m01sqfm6q1lbd");
 
   map.flyTo(
     {
       duration: 2500,
-      zoom: 18,
+      zoom: 16,
       pitch: 50,
       center: location.value.center,
       // To-do: Fix additive padding bug in Mapbox GL JS
